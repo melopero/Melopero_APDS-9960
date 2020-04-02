@@ -289,4 +289,15 @@ class APDS_9960():
         self.write_byte_data(reg_value, APDS_9960.WAIT_TIME_REG_ADDRESS)
     
     
-        
+# =============================================================================
+#TODO: REMOVE 'MAIN' AND ADD TESTS
+# =============================================================================
+if __name__ == "__main__":
+    import time
+    device = APDS_9960()
+    device.enable_all_engines_and_power_up()
+    for i in range(100):
+        time.sleep(.25)
+        print("Prox: {}".format(device.get_proximity_data()))
+        print("Color: {}".format(device.get_color_data()))
+    
