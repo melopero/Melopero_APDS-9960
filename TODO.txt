@@ -1,0 +1,16 @@
+
+Functions and features:
+	Status registers, Gain and clear interrupts
+
+Testing:
+	proximity and gesture engines "work".
+	Test with gain parameter
+	Test color/als engine
+	Test interrupts
+	Test all three engines together
+	...
+
+Publication and Documentation:
+	README / wiki 
+	setup.py and __init__.py 
+	publish 
