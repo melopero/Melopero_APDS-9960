@@ -13,6 +13,7 @@ class APDS_9960():
     #Register addresses
     ENABLE_REG_ADDRESS = 0x80
     CONFIG_1_REG_ADDRESS = 0x8D
+    CONFIG_3_REG_ADDRESS = 0x9F
     INTERRUPT_PERSISTANCE_REG_ADDRESS = 0x8C
     
     #Proximity Registers Addresses
@@ -39,18 +40,59 @@ class APDS_9960():
     BLUE_DATA_LOW_BYTE_REG_ADDRESS = 0x9A #Low Byte of blue channel data.
     BLUE_DATA_HIGH_BYTE_REG_ADDRESS = 0x9B #High Byte of blue channel data.
     
+    #Gesture Register Addresses
+    GESTURE_PROX_ENTER_THR_REG_ADDRESS = 0xA0
+    GESTURE_EXIT_THR_REG_ADDRESS = 0xA1
+    GESTURE_CONFIG_1_REG_ADDRESS = 0xA2
+    GESTURE_CONFIG_2_REG_ADDRESS = 0xA3
+    GESTURE_CONFIG_3_REG_ADDRESS = 0xAA
+    GESTURE_CONFIG_4_REG_ADDRESS = 0xAB
+    GESTURE_OFFSET_REG_ADDRESSES = [0xA4, 0xA5, 0xA7, 0xA9]
+    GESTURE_PULSE_COUNT_AND_LEN_REG_ADDRESS = 0xA6
+    GESTURE_FIFO_LEVEL_REG_ADDRESS = 0xAE
+    GESTURE_FIFO_UP_REG_ADDRESS = 0xFC
+    GESTURE_FIFO_DOWN_REG_ADDRESS = 0xFD
+    GESTURE_FIFO_LEFT_REG_ADDRESS = 0xFE
+    GESTURE_FIFO_RIGHT_REG_ADDRESS = 0xFF
+
     #Wait Registers Addresses
     WAIT_TIME_REG_ADDRESS = 0x83
     
     #Proximity pulse lengths
-    PROX_PULSE_LEN_4_MICROS = 0
-    PROX_PULSE_LEN_8_MICROS = 1
-    PROX_PULSE_LEN_16_MICROS = 2
-    PROX_PULSE_LEN_32_MICROS = 3
+    PULSE_LEN_4_MICROS = 0
+    PULSE_LEN_8_MICROS = 1
+    PULSE_LEN_16_MICROS = 2
+    PULSE_LEN_32_MICROS = 3
+    
+    #Gesture FIFO interrupt levels
+    FIFO_INT_AFTER_1_DATASET = 0
+    FIFO_INT_AFTER_4_DATASETS = 1
+    FIFO_INT_AFTER_8_DATASETS = 2
+    FIFO_INT_AFTER_16_DATASETS = 3
+    
+    #Gesture exit persistences
+    EXIT_AFTER_1_GESTURE_END = 0
+    EXIT_AFTER_2_GESTURE_END = 1
+    EXIT_AFTER_4_GESTURE_END = 2
+    EXIT_AFTER_7_GESTURE_END = 3
+    
+    #Gesture wait time
+    GESTURE_WAIT_0_MILLIS = 0
+    GESTURE_WAIT_2_8_MILLIS = 1
+    GESTURE_WAIT_5_6_MILLIS = 2
+    GESTURE_WAIT_8_4_MILLIS = 3
+    GESTURE_WAIT_14_MILLIS = 4
+    GESTURE_WAIT_22_4_MILLIS = 5
+    GESTURE_WAIT_30_8_MILLIS = 6
+    GESTURE_WAIT_39_2_MILLIS = 7
     
     def __init__(self, i2c_address = DEFAULT_I2C_ADDRESS, i2c_bus = 1):
         self.i2c_address = i2c_address
         self.i2c_bus = i2c_bus
+        
+    # =========================================================================
+    #     I2C functions
+    # =========================================================================
     
     def read_byte_data(self, register_address, amount = 1):
         """Read a byte (or multiple bytes) from the device.\n
@@ -91,8 +133,12 @@ class APDS_9960():
             else :
                 register_value &= value << (index + offset)
         self.write_byte_data(register_value, register_address)
+        
+    # =========================================================================
+    #     Device Methods
+    # =========================================================================
             
-    def set_power_up(self, power_up = True):
+    def power_up(self, power_up = True):
         """Toggles between IDLE and SLEEP state. In sleep state the device can 
         still receive and process I2C messages.\n
         :power_up = True: Enter the IDLE state if True else enter SLEEP state, by default the value is True.
@@ -104,10 +150,18 @@ class APDS_9960():
         interrupt settings."""
         value = 0b01001111 if enable else 0
         self.write_byte_data(value, APDS_9960.ENABLE_REG_ADDRESS)
+    
+    def set_sleep_after_interrupt(self, enable = True):
+        """Sleep After Interrupt. When enabled, the device will automatically 
+        enter low power mode when the INT pin is asserted. Normal operation is 
+        resumed when INT pin is cleared over I2C.\n
+        """
+        self.write_flag_data([enable], APDS_9960.CONFIG_3_REG_ADDRESS, 4)
         
     # =========================================================================
     #     Proximity Engine Methods
     # =========================================================================
+        
     def enable_proximity_engine(self, enable = True):
         self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 2)
         
@@ -145,18 +199,18 @@ class APDS_9960():
         self.write_flag_data(flag, APDS_9960.INTERRUPT_PERSISTANCE_REG_ADDRESS, 4)
     
     def set_proximity_pulse_count_and_length(self, pulse_count, 
-                                             pulse_length = PROX_PULSE_LEN_8_MICROS):
+                                             pulse_length = PULSE_LEN_8_MICROS):
         """The proximity pulse count is the number of pulses to be output on
         the LDR pin. The proximity pulse length is the amount of time the LDR 
         pin is sinking current during a proximity pulse.\n
         :pulse_count: must be in range [1-64]\n
-        :pulse_length: must be one of APDS_9960.PROX_PULSE_LEN_N_MICROS.
+        :pulse_length: must be one of APDS_9960.PULSE_LEN_N_MICROS.
         """
         if not (1 <= pulse_count <= 64):
             raise ValueError("pulse_count must be in range [1-64]")
-        if not (APDS_9960.PROX_PULSE_LEN_4_MICROS <= pulse_length 
-                <= APDS_9960.PROX_PULSE_LEN_32_MICROS):
-            raise ValueError("pulse_length must be one of APDS_9960.PROX_PULSE_LEN_N_MICROS")
+        if not (APDS_9960.PULSE_LEN_4_MICROS <= pulse_length 
+                <= APDS_9960.PULSE_LEN_32_MICROS):
+            raise ValueError("pulse_length must be one of APDS_9960.PULSE_LEN_N_MICROS")
 
         reg_value = pulse_length << 6
         reg_value |= pulse_count - 1
@@ -180,14 +234,18 @@ class APDS_9960():
         dl_reg_value |= 0x80 if down_left_offset < 0 else 0x00
         self.write_byte_data(dl_reg_value, APDS_9960.PROX_DOWN_LEFT_OFFSET_REG_ADDRESS)
         
+    def disable_photodiodes(self, mask_up, mask_down, mask_left, mask_right):
+        """Select which photodiodes are used for proximity.\n
+        :mask_up: if True disables the up photodiode.\n
+        :mask_down: if True disables the down photodiode.\n
+        :mask_left: if True disables the left photodiode.\n
+        :mask_right: if True disables the right photodiode.\n
+        """
+        self.write_flag_data([mask_right, mask_left, mask_down, mask_up], 
+                             APDS_9960.CONFIG_3_REG_ADDRESS, 0)
+        
     def get_proximity_data(self):
         return self.read_byte_data(APDS_9960.PROX_DATA_REG_ADDRESS)
-    
-    # =========================================================================
-    #     Gestures Engine Methods
-    # =========================================================================
-    def enable_gestures_engine(self, enable = True):
-        self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 6)
     
     # =========================================================================
     #     ALS Engine Methods
@@ -267,8 +325,167 @@ class APDS_9960():
         return color
     
     # =========================================================================
+    #     Gestures Engine Methods
+    # =========================================================================
+    
+    def enable_gestures_engine(self, enable = True):
+        self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 6)
+        
+    def set_gesture_prox_enter_threshold(self, enter_thr):
+        """The Gesture Proximity Enter Threshold Register value is compared 
+        with Proximity value, to determine if the gesture state machine is 
+        entered. The proximity persistence filter, is not used to determine 
+        gesture state machine entry.\n
+        :enter_thr: the enter threshold value must be an 8-bit unsigned int
+        """
+        if not (0 <= enter_thr <= 0xFF):
+            raise ValueError("enter_thr must be in range [0-0xFF]")
+        
+        self.write_byte_data(enter_thr, APDS_9960.GESTURE_PROX_ENTER_THR_REG_ADDRESS)
+    
+    def set_gesture_exit_threshold(self, exit_thr):
+        """The Gesture Proximity Exit Threshold value compares all non-masked 
+        gesture detection photodiodes (UDLR). Gesture state machine exit is 
+        also governed by the Gesture Exit Persistence value.\n
+        :exit_thr: Gesture Exit Threshold. The value used to determine a 
+            “gesture end” and subsequent exit of the gesture state machine.
+        """
+        if not (0 <= exit_thr <= 0xFF):
+            raise ValueError("exit_thr must be in range [0-0xFF]")
+        
+        self.write_byte_data(exit_thr, APDS_9960.GESTURE_EXIT_THR_REG_ADDRESS)
+        
+    def set_gesture_fifo_threshold(self, fifo_thr):
+        """Gesture FIFO Threshold. This value is compared with the FIFO Level 
+        (i.e. the number of UDLR datasets) to generate an interrupt 
+        (if enabled).\n
+        :fifo_thr: must be one of FIFO_INT_AFTER_N_DATASET(S).
+        """
+        if not (APDS_9960.FIFO_INT_AFTER_1_DATASET <= fifo_thr 
+                <= APDS_9960.FIFO_INT_AFTER_16_DATASETS):
+            raise ValueError("fifo_thr must be one of FIFO_INT_AFTER_N_DATASET(S)")
+        
+        flag = [bool(fifo_thr & 0b01), bool(fifo_thr & 0b10)]
+        self.write_flag_data(flag, APDS_9960.GESTURE_CONFIG_1_REG_ADDRESS, 6)
+        
+    def set_gesture_exit_mask(self, mask_up, mask_down, mask_left, mask_right):
+        """Gesture Exit Mask. Controls which of the gesture detector photodiodes
+        (UDLR) will be included to determine a “gesture end” and subsequent 
+        exit of the gesture state machine. Unmasked UDLR data will be compared 
+        with the value in GTHR_OUT.\n
+        :mask_up: if True do not include up photodiode in sum.\n
+        :mask_down: if True do not include down photodiode in sum.\n
+        :mask_left: if True do not include left photodiode in sum.\n
+        :mask_right: if True do not include right photodiode in sum.\n
+        """
+        self.write_flag_data([mask_right, mask_left, mask_down, mask_up], 
+                             APDS_9960.GESTURE_CONFIG_1_REG_ADDRESS, 2)
+        
+    def set_gesture_exit_persistence(self, persistence):
+        """Gesture Exit Persistence. When a number of consecutive “gesture end”
+        occurrences become equal or greater to the persistence value, the 
+        Gesture state machine is exited.\n
+        :persistence: must be one of EXIT_AFTER_N_GESTURE_END.
+        """
+        if not (APDS_9960.EXIT_AFTER_1_GESTURE_END <= persistence
+                <= APDS_9960.EXIT_AFTER_7_GESTURE_END):
+            raise ValueError("persistence must be one of EXIT_AFTER_N_GESTURE_END.")
+        
+        flag = [bool(persistence & 0b01), bool(persistence & 0b10)]
+        self.write_flag_data(flag, APDS_9960.GESTURE_CONFIG_1_REG_ADDRESS, 0)    
+    
+    def set_gesture_wait_time(self, wait_time):
+        """Gesture Wait Time. The wait time controls the amount of time in a 
+        low power mode between gesture detection cycles.\n
+        :wait_time: must be one of GESTURE_WAIT_N_MILLIS.
+        """
+        if not (APDS_9960.GESTURE_WAIT_0_MILLIS <= wait_time 
+                <= APDS_9960.GESTURE_WAIT_39_2_MILLIS):
+            raise ValueError("wait_time must be one of GESTURE_WAIT_N_MILLIS.")
+        
+        flag = [bool(wait_time & 0b001), bool(wait_time & 0b010), bool(wait_time & 0b100)]
+        self.write_flag_data(flag, APDS_9960.GESTURE_CONFIG_2_REG_ADDRESS, 0)
+        
+    def set_gesture_offsets(self, up_offset, down_offset, left_offset, right_offset):
+        """The offsets are used to scale an internal offset correction factor 
+        to compensate for crosstalk in the application.\n
+        :up_offset: must be in range [-127-127].\n
+        :down_offset: must be in range [-127-127].\n
+        :left_offset: must be in range [-127-127].\n
+        :right_offset: must be in range [-127-127].\n
+        """
+        offsets = [up_offset, down_offset, left_offset, right_offset]
+        if not all(map(lambda x : -127 <= x <= 127), offsets):
+            raise ValueError("All offset must be in range [-127-127]")
+        
+        for i, offset in enumerate(offsets):
+            reg_value = abs(offset)
+            reg_value |= 0x80 if offset < 0 else 0
+            self.write_byte_data(reg_value, APDS_9960.GESTURE_OFFSET_REG_ADDRESSES[i])
+        
+    def set_gesture_pulse_count_and_length(self, pulse_count, pulse_length):
+        """The Gesture pulse count sets the number of pulses to be output on 
+        the LDR pin. The Gesture Length sets the amount of time the LDR pin is 
+        sinking current during a gesture pulse.\n
+        :pulse_count: must be in range [1-64].\n
+        :pulse_length: must be one of PULSE_LEN_N_MICROS.
+        """
+        if not (1 <= pulse_count <= 64):
+            raise ValueError("pulse_count must be in range [1-64].")
+        if not (APDS_9960.PULSE_LEN_4_MICROS <= pulse_length 
+                <= APDS_9960.PULSE_LEN_32_MICROS):
+            raise ValueError("pulse_length must be one of PULSE_LEN_N_MICROS.")
+        
+        reg_value = (pulse_count - 1) + (pulse_length << 6)
+        self.write_byte_data(reg_value, APDS_9960.GESTURE_PULSE_COUNT_AND_LEN_REG_ADDRESS)
+        
+    def set_active_photodiodes_pairs(self, up_down_active = True, right_left_active = True):
+        """Which gesture photodiode pair: UP-DOWN and/or RIGHT-LEFT will be 
+        enabled (have valid data in FIFO) while the gesture state machine is 
+        collecting directional data. Allows the enabled pair to collect data 
+        twice as fast. Data stored in the FIFO for a disabled pair is not valid.
+        This feature is useful to improve reliability and accuracy of gesture 
+        detection when only one-dimensional gestures are expected.\n
+        :up_down_active = True:\n
+        :right_left_active = True:
+        """
+        self.write_flag_data([up_down_active, right_left_active], 
+                             APDS_9960.GESTURE_CONFIG_3_REG_ADDRESS, 0)
+        
+    def clear_gesture_engine(self):
+        """Clears GFIFO, GINT, GVALID, GFIFO_OV and GFIFO_LVL."""
+        self.write_flag_data([True], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 2)
+    
+    def enable_gesture_interrupts(self, enable_interrupts = True):
+        """Enables or disables all gesture engine related interrupts."""
+        self.write_flag_data([enable_interrupts], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 1)
+        
+    def is_gesture_engine_running(self):
+        return bool(self.read_byte_data(APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS) & 0x01)
+        
+    def enter_immediately_gesture_engine(self):
+        """Causes immediate entry in to the gesture state machine."""
+        self.write_flag_data([True], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 0)
+        
+    def exit_gesture_engine(self):
+        """Causes exit of gesture when current analog conversion has finished."""
+        self.write_flag_data([False], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 0)
+        
+    def get_number_of_datasets_in_fifo(self):
+        """Returns how many four byte data points - UDLR are ready for read 
+        over I2C. One four-byte dataset is equivalent to a single count."""
+        return self.read_byte_data(APDS_9960.GESTURE_FIFO_LEVEL_REG_ADDRESS)
+    
+    def get_gesture_data(self):
+        """Returns a dataset (list) containing one integration cycle of UP, 
+        DOWN, LEFT & RIGHT gesture data. The amount of valid data can be retrieved 
+        with the get_number_of_datasets_in_fifo method."""
+        return self.read_byte_data(APDS_9960.GESTURE_FIFO_UP_REG_ADDRESS, 4)
+    
+    # =========================================================================
     #     Wait Engine Methods
     # =========================================================================
+        
     def enable_wait_engine(self, enable = True):
         self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 3)
         
@@ -290,14 +507,25 @@ class APDS_9960():
     
     
 # =============================================================================
+# TODO: GAIN, STATUS, CLEAR INTERRUPTS   
+# =============================================================================
+# =============================================================================
 #TODO: REMOVE 'MAIN' AND ADD TESTS
 # =============================================================================
 if __name__ == "__main__":
     import time
     device = APDS_9960()
-    device.enable_all_engines_and_power_up()
+    device.enable_all_engines_and_power_up(False)
+    device.enable_proximity_engine()
+    device.enable_gestures_engine()
+    device.power_up()
+    print(device.read_byte_data(APDS_9960.ENABLE_REG_ADDRESS))
     for i in range(100):
         time.sleep(.25)
         print("Prox: {}".format(device.get_proximity_data()))
-        print("Color: {}".format(device.get_color_data()))
-    
+        datas = device.get_number_of_datasets_in_fifo()
+        print("fifo level : {}".format(datas))
+        if datas > 0:
+            for i in range(datas):
+                print(i, device.get_gesture_data())
+    device.power_up(False)
