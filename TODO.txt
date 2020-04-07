@@ -1,6 +1,6 @@
 
 Functions and features:
-	Status registers, Gain and clear interrupts
+	clear interrupts
 
 Testing:
 	proximity and gesture engines "work".
