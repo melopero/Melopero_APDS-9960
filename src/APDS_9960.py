@@ -57,9 +57,16 @@ class APDS_9960():
     GESTURE_FIFO_DOWN_REG_ADDRESS = 0xFD
     GESTURE_FIFO_LEFT_REG_ADDRESS = 0xFE
     GESTURE_FIFO_RIGHT_REG_ADDRESS = 0xFF
+    GESTURE_STATUS_REG_ADDRESS = 0xAF
 
     #Wait Registers Addresses
     WAIT_TIME_REG_ADDRESS = 0x83
+    
+    #Clear interrupt regs
+    FORCE_INTERRUPT_REG_ADDRESS = 0xE4
+    PROXIMITY_INT_CLEAR_REG_ADDRESS = 0xE5 
+    ALS_INT_CLEAR_REG_ADDRESS = 0xE6 
+    CLEAR_ALL_NON_GEST_INT_REG_ADDRESS = 0xE7
     
     #Proximity pulse lengths
     PULSE_LEN_4_MICROS = 0
@@ -220,8 +227,15 @@ class APDS_9960():
         status_dic["Proximity Valid"] = bool(status & 0x02)
         status_dic["ALS Valid"] = bool(status & 0x01)
         return status_dic
+    
+    def generate_interrupt(self):
+        with SMBusWrapper(self.i2c_bus) as bus:
+            bus.write_byte(self.i2c_address, )
 
-        
+    def clear_all_non_gesture_interrupts(self):
+        with SMBusWrapper(self.i2c_bus) as bus:
+            bus.write_byte(self.i2c_address, APDS_9960.CLEAR_ALL_NON_GEST_INT_REG_ADDRESS)
+            
     # =========================================================================
     #     Proximity Engine Methods
     # =========================================================================
@@ -234,6 +248,10 @@ class APDS_9960():
         
     def enable_proximity_saturation_interrupts(self, enable = True):
         self.write_flag_data([enable], APDS_9960.CONFIG_2_REG_ADDRESS, 7)
+        
+    def clear_proximity_interrupts(self):
+        with SMBusWrapper(self.i2c_bus) as bus:
+            bus.write_byte(self.i2c_address, APDS_9960.PROXIMITY_INT_CLEAR_REG_ADDRESS)
     
     def set_proximity_gain(self, prox_gain):
         """Proximity Gain Control.\n
@@ -344,6 +362,10 @@ class APDS_9960():
         
     def enable_als_saturation_interrupts(self, enable = True):
         self.write_flag_data([enable], APDS_9960.CONFIG_2_REG_ADDRESS, 6)
+        
+    def clear_als_interrupts(self):
+        with SMBusWrapper(self.i2c_bus) as bus:
+            bus.write_byte(self.i2c_address, APDS_9960.ALS_INT_CLEAR_REG_ADDRESS)
         
     def set_als_gain(self, als_gain):
         """ALS and Color Gain Control.\n
@@ -595,6 +617,14 @@ class APDS_9960():
         """Returns how many four byte data points - UDLR are ready for read 
         over I2C. One four-byte dataset is equivalent to a single count."""
         return self.read_byte_data(APDS_9960.GESTURE_FIFO_LEVEL_REG_ADDRESS)
+    
+    def get_gesture_status(self):
+        """Returns a dictionary containing data about the gesture engine status."""
+        status_dict = dict()
+        status = self.read_byte_data(APDS_9960.GESTURE_STATUS_REG_ADDRESS)
+        status_dict["Gesture FIFO Overflow"] = bool(status & 0x02) 
+        status_dict["Gesture FIFO Data"] = bool(status & 0x01)
+        return status_dict
     
     def get_gesture_data(self):
         """Returns a dataset (list) containing one integration cycle of UP, 

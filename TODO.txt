@@ -1,6 +1,6 @@
 
 Functions and features:
-	clear interrupts
+	---------------
 
 Testing:
 	proximity and gesture engines "work".
