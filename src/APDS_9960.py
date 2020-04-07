@@ -13,8 +13,11 @@ class APDS_9960():
     #Register addresses
     ENABLE_REG_ADDRESS = 0x80
     CONFIG_1_REG_ADDRESS = 0x8D
+    CONFIG_2_REG_ADDRESS = 0x90
     CONFIG_3_REG_ADDRESS = 0x9F
+    CONTROL_1_REG_ADDRESS = 0x8F
     INTERRUPT_PERSISTANCE_REG_ADDRESS = 0x8C
+    STATUS_REG_ADDRESS = 0x93
     
     #Proximity Registers Addresses
     PROX_INT_LOW_THR_REG_ADDRESS = 0x89
@@ -63,6 +66,30 @@ class APDS_9960():
     PULSE_LEN_8_MICROS = 1
     PULSE_LEN_16_MICROS = 2
     PULSE_LEN_32_MICROS = 3
+    
+    #Led drive levels
+    LED_DRIVE_100_mA = 0
+    LED_DRIVE_50_mA = 1
+    LED_DRIVE_25_mA = 2
+    LED_DRIVE_12_5_mA = 3
+    
+    #Led Boost levels
+    LED_BOOST_100 = 0
+    LED_BOOST_150 = 1
+    LED_BOOST_200 = 2
+    LED_BOOST_300 = 3
+    
+    #Proximity gain
+    PROXIMITY_GAIN_1X = 0
+    PROXIMITY_GAIN_2X = 1
+    PROXIMITY_GAIN_4X = 2
+    PROXIMITY_GAIN_8X = 3
+    
+    #ALS Gain
+    ALS_GAIN_1X = 0
+    ALS_GAIN_4X = 1
+    ALS_GAIN_16X = 2
+    ALS_GAIN_64X = 3
     
     #Gesture FIFO interrupt levels
     FIFO_INT_AFTER_1_DATASET = 0
@@ -158,6 +185,43 @@ class APDS_9960():
         """
         self.write_flag_data([enable], APDS_9960.CONFIG_3_REG_ADDRESS, 4)
         
+    def set_led_drive(self, led_drive):
+        """LED drive strength.\n
+        :led_drive: must be one of LED_DRIVE_N_mA.
+        """
+        if not (APDS_9960.LED_DRIVE_100_mA <= led_drive <= APDS_9960.LED_DRIVE_12_5_mA):
+            raise ValueError("led_drive must be one of APDS_9960.LED_DRIVE_N_mA")
+        
+        self.write_flag_data([bool(led_drive & 0b01), bool(led_drive & 0b10)],
+                             APDS_9960.CONTROL_1_REG_ADDRESS, 6)
+        
+    def set_led_boost(self, led_boost):
+        """The LED_BOOST allows the LDR pin to sink more current above the 
+        maximum setting. Additional LDR current during proximity and gesture 
+        LED pulses. Current value, set by LDRIVE, is increased by the 
+        percentage of LED_BOOST.\n
+        :led_boost: must be one of LED_BOOST_N
+        """
+        if not (APDS_9960.LED_BOOST_100 <= led_boost <= APDS_9960.LED_BOOST_300):
+            raise ValueError("led_boost must be one of APDS.LED_BOOST_N")
+        
+        self.write_flag_data([bool(led_boost & 0b01), bool(led_boost & 0b10)], 
+                             APDS_9960.CONFIG_2_REG_ADDRESS, 4)
+        
+    def get_device_status(self):
+        "Returns a dictionary containing the status of the device."
+        status = self.read_byte_data(APDS_9960.STATUS_REG_ADDRESS)
+        status_dic = dict()
+        status_dic["Clear Photodiode Saturation"] = bool(status & 0x80)
+        status_dic["Proximity/Gesture Saturation"] = bool(status & 0x40)
+        status_dic["Proximity Interrupt"] = bool(status & 0x20)
+        status_dic["ALS Interrupt"] = bool(status & 0x10)
+        status_dic["Gesture Interrupt"] = bool(status & 0x04)
+        status_dic["Proximity Valid"] = bool(status & 0x02)
+        status_dic["ALS Valid"] = bool(status & 0x01)
+        return status_dic
+
+        
     # =========================================================================
     #     Proximity Engine Methods
     # =========================================================================
@@ -167,6 +231,19 @@ class APDS_9960():
         
     def enable_proximity_interrupts(self, enable = True):
         self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 5)
+        
+    def enable_proximity_saturation_interrupts(self, enable = True):
+        self.write_flag_data([enable], APDS_9960.CONFIG_2_REG_ADDRESS, 7)
+    
+    def set_proximity_gain(self, prox_gain):
+        """Proximity Gain Control.\n
+        :prox_gain: must be one of PROXIMITY_GAIN_NX.
+        """
+        if not (APDS_9960.PROXIMITY_GAIN_1X <= prox_gain <= APDS_9960.PROXIMITY_GAIN_8X):
+            raise ValueError("prox_gain must be one of PROXIMITY_GAIN_NX.")
+        
+        self.write_flag_data([bool(prox_gain & 0b01), bool(prox_gain & 0b10)], 
+                             APDS_9960.CONTROL_1_REG_ADDRESS, 2)
         
     def set_proximity_interrupt_thresholds(self, low_thr, high_thr):
         """The Proximity Interrupt Threshold sets the high and low trigger points
@@ -234,15 +311,24 @@ class APDS_9960():
         dl_reg_value |= 0x80 if down_left_offset < 0 else 0x00
         self.write_byte_data(dl_reg_value, APDS_9960.PROX_DOWN_LEFT_OFFSET_REG_ADDRESS)
         
-    def disable_photodiodes(self, mask_up, mask_down, mask_left, mask_right):
+    def disable_photodiodes(self, mask_up, mask_down, mask_left, mask_right, 
+                            proximity_gain_compensation):
         """Select which photodiodes are used for proximity.\n
         :mask_up: if True disables the up photodiode.\n
         :mask_down: if True disables the down photodiode.\n
         :mask_left: if True disables the left photodiode.\n
         :mask_right: if True disables the right photodiode.\n
+        :proximity_gain_compensation: provides gain compensation when proximity
+            photodiode signal is reduced as a result of sensor masking. If only 
+            one diode of the diode pair is contributing, then only half of the 
+            signal is available at the ADC; this results in a maximum ADC value
+            of 127. Enabling enables an additional gain of 2X, resulting in a 
+            maximum ADC value of 255.
         """
         self.write_flag_data([mask_right, mask_left, mask_down, mask_up], 
                              APDS_9960.CONFIG_3_REG_ADDRESS, 0)
+        self.write_flag_data([proximity_gain_compensation],
+                             APDS_9960.CONFIG_3_REG_ADDRESS, 5)
         
     def get_proximity_data(self):
         return self.read_byte_data(APDS_9960.PROX_DATA_REG_ADDRESS)
@@ -255,6 +341,19 @@ class APDS_9960():
         
     def enable_als_interrupts(self, enable = True):
         self.write_flag_dat([enable], APDS_9960.ENABLE_REG_ADDRESS, 4)
+        
+    def enable_als_saturation_interrupts(self, enable = True):
+        self.write_flag_data([enable], APDS_9960.CONFIG_2_REG_ADDRESS, 6)
+        
+    def set_als_gain(self, als_gain):
+        """ALS and Color Gain Control.\n
+        :als_gain: must be one of ALS_GAIN_NX.
+        """
+        if not (APDS_9960.ALS_GAIN_1X <= als_gain <= APDS_9960.ALS_GAIN_64X):
+            raise ValueError("als_gain must be one of ALS_GAIN_NX.")
+        
+        self.write_flag_data([bool(als_gain & 0b01), bool(als_gain & 0b10)], 
+                             APDS_9960.CONTROL_1_REG_ADDRESS, 0)
         
     def set_als_thresholds(self, low_thr, high_thr):
         """ALS level detection uses data generated by the Clear Channel.
@@ -394,6 +493,27 @@ class APDS_9960():
         flag = [bool(persistence & 0b01), bool(persistence & 0b10)]
         self.write_flag_data(flag, APDS_9960.GESTURE_CONFIG_1_REG_ADDRESS, 0)    
     
+    def set_gesture_gain(self, gesture_gain):
+        """Gesture Gain Control. Sets the gain of the proximity receiver in 
+        gesture mode.\n
+        :gesture_gain: must be one of PROXIMITY_GAIN_NX.
+        """
+        if not (APDS_9960.PROXIMITY_GAIN_1X <= gesture_gain <= APDS_9960.PROXIMITY_GAIN_8X):
+            raise ValueError("gesture_gain must be one of PROXIMITY_GAIN_NX.")
+        
+        self.write_flag_data([bool(gesture_gain & 0b01), bool(gesture_gain & 0b10)], 
+                             APDS_9960.GESTURE_CONFIG_2_REG_ADDRESS, 5)
+    
+    def set_gesture_led_drive(self, led_drive):
+        """Gesture LED Drive Strength. Sets LED Drive Strength in gesture mode.\n
+        :led_drive: must be one of LED_DRIVE_N_mA.
+        """
+        if not (APDS_9960.LED_DRIVE_100_mA <= led_drive <= APDS_9960.LED_DRIVE_12_5_mA):
+            raise ValueError("led_drive must be one of APDS_9960.LED_DRIVE_N_mA")
+        
+        self.write_flag_data([bool(led_drive & 0b01), bool(led_drive & 0b10)],
+                             APDS_9960.GESTURE_CONFIG_2_REG_ADDRESS, 3)
+
     def set_gesture_wait_time(self, wait_time):
         """Gesture Wait Time. The wait time controls the amount of time in a 
         low power mode between gesture detection cycles.\n
