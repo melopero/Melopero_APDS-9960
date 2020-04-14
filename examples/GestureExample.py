@@ -7,9 +7,6 @@
 import time
 import melopero_apds9960 as mp
 
-if __name__ == "__main__":
-    main()
-
 def main():
     device = mp.APDS_9960()
     
@@ -53,12 +50,13 @@ def process_gesture_data(data, tolerance = 25):
             if lows[i] > sample[i]:
                 lows[i] = sample[i]
     
+    #TODO: detect if same axis peaks are more or less at the sime time stamp...
     up_down = 0
-    if peak[0]-lows[0] > tolerance and peak[1] - lows[1] > tolerance:
+    if peaks[0]-lows[0] > tolerance and peaks[1] - lows[1] > tolerance:
         up_down = 1 if peaks_time[0] < peaks_time[1] else -1
     
     right_left = 0
-    if peak[2]-lows[2] > tolerance and peak[3] - lows[3] > tolerance:
+    if peaks[2]-lows[2] > tolerance and peaks[3] - lows[3] > tolerance:
         right_left = -1 if peaks_time[2] < peaks_time[3] else 1
     
     if up_down == 0 and right_left == 0:
@@ -70,6 +68,6 @@ def process_gesture_data(data, tolerance = 25):
     return "moved " + ud_string + " " + rl_string
     
     
-    
-                        
+if __name__ == "__main__":
+    main()
         
