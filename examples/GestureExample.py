@@ -7,33 +7,37 @@
 import time
 import melopero_apds9960 as mp
 
-device = mp.APDS_9960()
+if __name__ == "__main__":
+    main()
 
-#General settings
-device.set_sleep_after_interrupt(False)
-
-device.enable_gesture_engine()
-device.power_up()
-
-while True :
-    gesture_data = []
-    for i in range(device.get_number_of_datasets_in_fifo()):
-        gesture_data.append(device.get_gesture_data())
+def main():
+    device = mp.APDS_9960()
     
-    device_status = device.get_device_status()
-    gesture_status = device.get_gesture_status()
+    #General settings
+    device.set_sleep_after_interrupt(False)
     
-    print("*** Device Status ***")
-    for key, value in device_status.items():
-        print(key, value)
-    print("*** Gesture Status ***")
-    for key, value in gesture_status.items():
-        print(key, value)
+    device.enable_gestures_engine()
+    device.power_up()
     
-    print("*** Gesture Data ***")
-    print(process_gesture_data(gesture_data))
-    print("\n\n")
-    time.sleep(.1)
+    while True :
+        gesture_data = []
+        for i in range(device.get_number_of_datasets_in_fifo()):
+            gesture_data.append(device.get_gesture_data())
+        
+        device_status = device.get_device_status()
+        gesture_status = device.get_gesture_status()
+        
+        print("*** Device Status ***")
+        for key, value in device_status.items():
+            print(key, value)
+        print("*** Gesture Status ***")
+        for key, value in gesture_status.items():
+            print(key, value)
+        
+        print("*** Gesture Data ***")
+        print(process_gesture_data(gesture_data))
+        print("\n\n")
+        time.sleep(.1)
     
 def process_gesture_data(data, tolerance = 25):
     #find peaks
