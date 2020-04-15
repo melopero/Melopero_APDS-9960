@@ -36,7 +36,7 @@ def main():
         print("\n\n")
         time.sleep(.1)
     
-def process_gesture_data(data, tolerance = 25):
+def process_gesture_data(data, tolerance = 25, time_tolerance = 5):
     #find peaks
     peaks = [-1]*4
     peaks_time = [-1]*4
@@ -52,11 +52,11 @@ def process_gesture_data(data, tolerance = 25):
     
     #TODO: detect if same axis peaks are more or less at the sime time stamp...
     up_down = 0
-    if peaks[0]-lows[0] > tolerance and peaks[1] - lows[1] > tolerance:
+    if peaks[0]-lows[0] > tolerance and peaks[1] - lows[1] > tolerance and abs(peaks_time[0] - peaks_time[1]) > time_tolerance:
         up_down = 1 if peaks_time[0] < peaks_time[1] else -1
     
     right_left = 0
-    if peaks[2]-lows[2] > tolerance and peaks[3] - lows[3] > tolerance:
+    if peaks[2]-lows[2] > tolerance and peaks[3] - lows[3] > tolerance and abs(peaks_time[2] - peaks_time[3]) > time_tolerance:
         right_left = -1 if peaks_time[2] < peaks_time[3] else 1
     
     if up_down == 0 and right_left == 0:
