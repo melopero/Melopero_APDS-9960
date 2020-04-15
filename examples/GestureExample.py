@@ -19,34 +19,23 @@ def main():
     device.power_up()
     
     while True :
-        prox_data = device.get_proximity_data()
-        
-        gesture_data = []
-        for i in range(device.get_number_of_datasets_in_fifo()):
-            gesture_data.append(device.get_gesture_data())
-        
-        device_status = device.get_device_status()
+        #Retrieve the gesture engine status
         gesture_status = device.get_gesture_status()
         
-        print("*** Device Status ***")
-        for key, value in device_status.items():
-            print(key, value)
-            
-        print(f"Proximity Data: {prox_data}")
-        print("*** Gesture Status ***")
-        for key, value in gesture_status.items():
-            print(key, value)
-        
-        curr_gesture = process_gesture_data(gesture_data)
-        print("*** Gesture Data ***")
-        print(f"gesture: {curr_gesture}")
-        print(f"last gesture: {last_gesture}")
-        print("\n\n")
-        if curr_gesture != "No gesture detected":
-            last_gesture = curr_gesture
-        time.sleep(.1)
-    
-def process_gesture_data(data, tolerance = 25, time_tolerance = 5):
+        #Check if the FIFO is full, then parse and process the data
+        if gesture_status["Gesture FIFO Overflow"]:
+            gesture_data = []
+            for i in range(device.get_number_of_datasets_in_fifo()):
+                gesture_data.append(device.get_gesture_data())
+            curr_gesture = process_gesture_data(gesture_data)
+            print("*** Gesture Data ***")
+            print(f"gesture: {curr_gesture}")
+            print(f"last gesture: {last_gesture}")
+            print("\n\n")
+            if curr_gesture != "No gesture detected":
+                last_gesture = curr_gesture
+                
+def process_gesture_data(data, tolerance = 25, time_tolerance = 6):
     #find peaks
     peaks = [-1]*4
     peaks_time = [-1]*4
