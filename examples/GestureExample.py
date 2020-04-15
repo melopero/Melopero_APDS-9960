@@ -9,14 +9,18 @@ import melopero_apds9960 as mp
 
 def main():
     device = mp.APDS_9960()
+    last_gesture = ""
     
     #General settings
     device.set_sleep_after_interrupt(False)
     
+    device.enable_proximity_engine()
     device.enable_gestures_engine()
     device.power_up()
     
     while True :
+        prox_data = device.get_proximity_data()
+        
         gesture_data = []
         for i in range(device.get_number_of_datasets_in_fifo()):
             gesture_data.append(device.get_gesture_data())
@@ -27,13 +31,19 @@ def main():
         print("*** Device Status ***")
         for key, value in device_status.items():
             print(key, value)
+            
+        print(f"Proximity Data: {prox_data}")
         print("*** Gesture Status ***")
         for key, value in gesture_status.items():
             print(key, value)
         
+        curr_gesture = process_gesture_data(gesture_data)
         print("*** Gesture Data ***")
-        print(process_gesture_data(gesture_data))
+        print(f"gesture: {curr_gesture}")
+        print(f"last gesture: {last_gesture}")
         print("\n\n")
+        if curr_gesture != "No gesture detected":
+            last_gesture = curr_gesture
         time.sleep(.1)
     
 def process_gesture_data(data, tolerance = 25, time_tolerance = 5):
@@ -50,7 +60,6 @@ def process_gesture_data(data, tolerance = 25, time_tolerance = 5):
             if lows[i] > sample[i]:
                 lows[i] = sample[i]
     
-    #TODO: detect if same axis peaks are more or less at the sime time stamp...
     up_down = 0
     if peaks[0]-lows[0] > tolerance and peaks[1] - lows[1] > tolerance and abs(peaks_time[0] - peaks_time[1]) > time_tolerance:
         up_down = 1 if peaks_time[0] < peaks_time[1] else -1
