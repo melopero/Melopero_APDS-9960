@@ -179,6 +179,10 @@ class APDS_9960():
         self.write_flag_data([power_up], APDS_9960.ENABLE_REG_ADDRESS, 0)
         time.sleep(0.01)
 
+    def reset(self):
+        self.set_sleep_after_interrupt(False)
+        self.enable_all_engines_and_power_up(False)
+
     def enable_all_engines_and_power_up(self, enable=True):
         """Note: calling this function resets also the Proximity and ALS
         interrupt settings."""
@@ -216,7 +220,7 @@ class APDS_9960():
         self.write_flag_data([bool(led_boost & 0b01), bool(led_boost & 0b10)],
                              APDS_9960.CONFIG_2_REG_ADDRESS, 4)
 
-    def get_device_status(self):
+    def get_status(self):
         "Returns a dictionary containing the status of the device."
         status = self.read_byte_data(APDS_9960.STATUS_REG_ADDRESS)
         status_dic = dict()
@@ -228,14 +232,6 @@ class APDS_9960():
         status_dic["Proximity Valid"] = bool(status & 0x02)
         status_dic["ALS Valid"] = bool(status & 0x01)
         return status_dic
-
-    def generate_interrupt(self):
-        with SMBusWrapper(self.i2c_bus) as bus:
-            bus.write_byte(self.i2c_address, )
-
-    def clear_all_non_gesture_interrupts(self):
-        with SMBusWrapper(self.i2c_bus) as bus:
-            bus.write_byte(self.i2c_address, APDS_9960.CLEAR_ALL_NON_GEST_INT_REG_ADDRESS)
 
     # =========================================================================
     #     Proximity Engine Methods
@@ -355,6 +351,7 @@ class APDS_9960():
     # =========================================================================
     #     ALS Engine Methods
     # =========================================================================
+
     def enable_als_engine(self, enable=True):
         self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 1)
 
@@ -451,7 +448,18 @@ class APDS_9960():
     # =========================================================================
 
     def enable_gestures_engine(self, enable=True):
+        self.enable_proximity_engine()
         self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 6)
+
+    def enter_immediately_gesture_engine(self):
+        """Causes immediate entry in to the gesture state machine.
+        (Sets GMODE bit to 1)."""
+        self.write_flag_data([True], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 0)
+
+    def exit_gesture_engine(self):
+        """Causes exit of gesture when current analog conversion has finished.
+        (Sets GMODE bit to 0)."""
+        self.write_flag_data([False], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 0)
 
     def set_gesture_prox_enter_threshold(self, enter_thr):
         """The Gesture Proximity Enter Threshold Register value is compared 
@@ -605,14 +613,6 @@ class APDS_9960():
 
     def is_gesture_engine_running(self):
         return bool(self.read_byte_data(APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS) & 0x01)
-
-    def enter_immediately_gesture_engine(self):
-        """Causes immediate entry in to the gesture state machine."""
-        self.write_flag_data([True], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 0)
-
-    def exit_gesture_engine(self):
-        """Causes exit of gesture when current analog conversion has finished."""
-        self.write_flag_data([False], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 0)
 
     def get_number_of_datasets_in_fifo(self):
         """Returns how many four byte data points - UDLR are ready for read 

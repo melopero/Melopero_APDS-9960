@@ -7,12 +7,12 @@ def main():
 
     device.reset()
 
-    device.enable_proximity_engine()
+    device.enable_als_engine()
     device.power_up()
-    print(device.get_status())
+
     while True:
         time.sleep(.5)
-        print(device.get_proximity_data())
+        print(device.get_color_data())
 
 
 if __name__ == "__main__":

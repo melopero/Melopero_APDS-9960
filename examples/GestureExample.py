@@ -12,11 +12,12 @@ def main():
     device = mp.APDS_9960()
     last_gesture = ""
 
-    # General settings
-    device.set_sleep_after_interrupt(False)
+    # reset
+    device.reset()
 
     device.enable_proximity_engine()
     device.enable_gestures_engine()
+    device.enter_immediately_gesture_engine()
     device.power_up()
 
     while True:
