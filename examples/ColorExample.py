@@ -8,6 +8,7 @@ def main():
     device.reset()
 
     device.enable_als_engine()
+    device.set_als_integration_time(200)
     device.power_up()
 
     while True:
