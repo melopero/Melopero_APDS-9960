@@ -362,8 +362,7 @@ class APDS_9960():
         self.write_flag_data([enable], APDS_9960.CONFIG_2_REG_ADDRESS, 6)
 
     def clear_als_interrupts(self):
-        with SMBusWrapper(self.i2c_bus) as bus:
-            bus.write_byte(self.i2c_address, APDS_9960.ALS_INT_CLEAR_REG_ADDRESS)
+        pass
 
     def set_als_gain(self, als_gain):
         """ALS and Color Gain Control.\n
@@ -418,11 +417,7 @@ class APDS_9960():
     def set_als_integration_time(self, wtime):
         """The ATIME register controls the internal integration time of 
         ALS/Color analog to digital converters. The maximum count (or saturation) 
-        value can be calculated based upon the integration time and the size of 
-        the count register (i.e. 16 bits). For ALS/Color, the maximum count 
-        will be the lesser of either:
-            65535 (based on the 16 bit register size) or
-            The result of equation: CountMAX = 1025 x CYCLES\n
+        value can be retrieved with the get_saturation method.
         :wtime: the integration time in millis must be in range [2.78 - 712]
         """
         if not (2.78 <= wtime <= 712):
@@ -430,6 +425,12 @@ class APDS_9960():
 
         value = 256 - int(wtime / 2.78)
         self.write_byte_data(value, APDS_9960.ALS_ATIME_REG_ADDRESS)
+
+    def get_saturation(self):
+        """Returns the saturation value. The values returned by get_color_data can not exceed
+        this value."""
+        cycles = 256 - self.read_byte_data(APDS_9960.ALS_ATIME_REG_ADDRESS)
+        return min(65535, cycles * 1025)
 
     def get_color_data(self):
         """Red, green, blue, and clear data is stored as 16-bit values.\n
@@ -660,24 +661,3 @@ class APDS_9960():
 # =============================================================================
 # TODO: GAIN, STATUS, CLEAR INTERRUPTS   
 # =============================================================================
-# =============================================================================
-# TODO: REMOVE 'MAIN' AND ADD TESTS
-# =============================================================================
-if __name__ == "__main__":
-    import time
-
-    device = APDS_9960()
-    device.enable_all_engines_and_power_up(False)
-    device.enable_proximity_engine()
-    device.enable_gestures_engine()
-    device.power_up()
-    print(device.read_byte_data(APDS_9960.ENABLE_REG_ADDRESS))
-    for i in range(100):
-        time.sleep(.25)
-        print("Prox: {}".format(device.get_proximity_data()))
-        datas = device.get_number_of_datasets_in_fifo()
-        print("fifo level : {}".format(datas))
-        if datas > 0:
-            for i in range(datas):
-                print(i, device.get_gesture_data())
-    device.power_up(False)

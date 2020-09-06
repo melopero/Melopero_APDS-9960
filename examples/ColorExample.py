@@ -8,12 +8,14 @@ def main():
     device.reset()
 
     device.enable_als_engine()
-    device.set_als_integration_time(200)
+    device.set_als_integration_time(450)
+    saturation = device.get_saturation() * 255
     device.power_up()
 
     while True:
         time.sleep(.5)
-        print(device.get_color_data())
+        color = device.get_color_data()
+        print(f"Clear: {color[0] /saturation}  Red: {color[1] / saturation}  Green: {color[2] / saturation}  Blue: {color[3] /saturation}")
 
 
 if __name__ == "__main__":
