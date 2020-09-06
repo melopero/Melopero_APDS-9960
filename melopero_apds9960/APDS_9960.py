@@ -4,7 +4,7 @@
 @author: Leonardo La Rocca
 """
 from smbus2 import SMBusWrapper
-
+import time
 
 class APDS_9960():
     DEFAULT_I2C_ADDRESS = 0x39
