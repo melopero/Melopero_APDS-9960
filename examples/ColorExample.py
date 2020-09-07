@@ -9,13 +9,14 @@ def main():
 
     device.enable_als_engine()
     device.set_als_integration_time(450)
-    saturation = device.get_saturation() * 255
+    saturation = device.get_saturation()
     device.power_up()
 
     while True:
         time.sleep(.5)
         color = device.get_color_data()
-        print(f"Clear: {color[0] /saturation}  Red: {color[1] / saturation}  Green: {color[2] / saturation}  Blue: {color[3] /saturation}")
+        color = map(lambda val : val / saturation * 255, color)
+        print(f"Clear: {color[0]}  Red: {color[1]}  Green: {color[2]}  Blue: {color[3]}")
 
 
 if __name__ == "__main__":
