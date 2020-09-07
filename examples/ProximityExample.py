@@ -1,6 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@author: Leonardo La Rocca
+"""
+
 import time
 import melopero_apds9960 as mp
-
 
 def main():
     device = mp.APDS_9960()

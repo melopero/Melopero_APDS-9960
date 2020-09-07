@@ -247,6 +247,8 @@ class APDS_9960():
         self.write_flag_data([enable], APDS_9960.CONFIG_2_REG_ADDRESS, 7)
 
     def clear_proximity_interrupts(self):
+        # Interrupts are cleared by “address accessing” the appropriate register. This is special I2C transaction
+        # consisting of only two bytes: chip address with R/W = 0, followed by a register address.
         with SMBusWrapper(self.i2c_bus) as bus:
             bus.write_byte(self.i2c_address, APDS_9960.PROXIMITY_INT_CLEAR_REG_ADDRESS)
 
@@ -362,7 +364,10 @@ class APDS_9960():
         self.write_flag_data([enable], APDS_9960.CONFIG_2_REG_ADDRESS, 6)
 
     def clear_als_interrupts(self):
-        pass
+        # Interrupts are cleared by “address accessing” the appropriate register. This is special I2C transaction
+        # consisting of only two bytes: chip address with R/W = 0, followed by a register address.
+        with SMBusWrapper(self.i2c_bus) as bus:
+            bus.write_byte(self.i2c_address, APDS_9960.ALS_INT_CLEAR_REG_ADDRESS)
 
     def set_als_gain(self, als_gain):
         """ALS and Color Gain Control.\n
@@ -604,7 +609,7 @@ class APDS_9960():
         self.write_flag_data([up_down_active, right_left_active],
                              APDS_9960.GESTURE_CONFIG_3_REG_ADDRESS, 0)
 
-    def clear_gesture_engine(self):
+    def clear_gesture_engine_interrupts(self):
         """Clears GFIFO, GINT, GVALID, GFIFO_OV and GFIFO_LVL."""
         self.write_flag_data([True], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 2)
 
@@ -657,7 +662,3 @@ class APDS_9960():
         reg_value = 256 - int(wtime / 2.78)
         self.write_byte_data(reg_value, APDS_9960.WAIT_TIME_REG_ADDRESS)
 
-
-# =============================================================================
-# TODO: GAIN, STATUS, CLEAR INTERRUPTS   
-# =============================================================================

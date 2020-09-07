@@ -7,7 +7,6 @@
 import time
 import melopero_apds9960 as mp
 
-
 def main():
     device = mp.APDS_9960()
     last_gesture = ""

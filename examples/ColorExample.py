@@ -1,6 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@author: Leonardo La Rocca
+"""
+
 import time
 import melopero_apds9960 as mp
-
 
 def main():
     device = mp.APDS_9960()
@@ -16,7 +21,7 @@ def main():
         time.sleep(.5)
         color = device.get_color_data()
         color = map(lambda val : val / saturation * 255, color)
-        print(f"Clear: {next(color)}  Red: {next(color)}  Green: {next(color)}  Blue: {next(color)}")
+        print(f"Alfa: {next(color)}  Red: {next(color)}  Green: {next(color)}  Blue: {next(color)}")
 
 
 if __name__ == "__main__":
