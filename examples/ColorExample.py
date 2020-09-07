@@ -16,7 +16,7 @@ def main():
         time.sleep(.5)
         color = device.get_color_data()
         color = map(lambda val : val / saturation * 255, color)
-        print(f"Clear: {color[0]}  Red: {color[1]}  Green: {color[2]}  Blue: {color[3]}")
+        print(f"Clear: {next(color)}  Red: {next(color)}  Green: {next(color)}  Blue: {next(color)}")
 
 
 if __name__ == "__main__":
