@@ -22,7 +22,6 @@ The states are entered sequentially in the order depicted below:
 
 ![States](/images/states.png)
 
-
 ## How to use
 
 Importing the module and device object creation:
@@ -47,7 +46,7 @@ device.enable_gesture_engine(enable=True)
 device.enable_wait_engine(enable=True)
 ```
 
-### General Device Method
+### General Device Methods
 
 To toggle between the low consumption SLEEP state and the operating IDLE state:  
 
@@ -125,7 +124,7 @@ There are multiple conditions and options to enter the gesture engine state. The
     device.enter_immediately_gesture_engine() # Sets the enter condition for the Gesture engine state to: enter immediately
 
     device.exit_gesture_engine() # Resets the enter condition
-    
+
     # This methods are NOT meant to be called every measurement... they are called just
     # once to set the gesture engine state enter and exit condition
     ```
@@ -170,12 +169,79 @@ device.get_gesture_status()
 
 #### Gesture interrupts
 
+```python
+device.enable_gesture_interrupts()
 
+device.set_gesture_fifo_threshold(fifo_thr)
+# if the number of datasets in the FIFO exceeds the given threshold an interrupt is generated.
+
+device.clear_gesture_engine_interrupts()
+```
 
 #### Advanced settings
+
+There are several other methods (similar to the proximity engine) to tweak the gesture engine's settings.
 
 ### Color/Als engine
 
+To read the last measured color value (to update the color values the engine must be enabled):
+
+```python
+device.get_color_data()
+# Returns the last measured ARGB values (Alfa Red Green Blue) as 16 bit integers
+```
+
+The maximum values for the ARGB values depends on the saturation value which depends on the color engine's settings. To normalize the color values :
+
+```python
+# First set the Color engine settigns
+# ....
+# ....
+
+# Then retrieve the saturation value
+saturation = device.get_saturation()
+
+raw_data = device.get_color_data() # the raw data retrieved from the sensor 16 bit uints
+normalized_data = list(map(lambda v : v / saturation, raw_data)) # values range from 0 to 1
+byte_format = list(map(lambda v : v * 255, normalized_data)) # values range from 0 to 255
+```
+
 #### Color/Als interrupts
 
+```python
+device.enable_als_interrupts()
+
+device.set_als_thresholds(low, high)
+# if clear channel data is less than low or greater than high an interrupt is generated.
+
+device.set_als_interrupt_persistence(persistence)
+# Sets the number of measurements that meet the interrupt conditions to generate an interrupt.
+
+device.clear_als_interrupts()
+```
+
 #### Advanced settings
+
+```python
+device.set_als_gain(als_gain)
+# als_gain must be one of mp.APDS_9960.ALS_GAIN_NX
+
+device.set_als_integration_time(wtime)
+# the internal integration time of ALS/Color analog to digital converters.
+# If in a low light environment a longer integration time may lead to
+# better results.
+```
+
+There are several other methods to tweak the color engine's settings.
+
+### Wait engine
+
+To set the wait time you can use:
+
+```python
+device.set_wait_time(wtime, long_wait=False)
+# This is the time that will pass between two cycles.The wait time should be
+# configured before the proximity and the als engines get enabled.
+# wtime: the time value in millisenconds. Must be between 2.78ms and 712ms
+# long_wait = False: If true the wait time is multiplied by 12.
+```
