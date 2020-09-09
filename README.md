@@ -232,8 +232,6 @@ device.set_als_integration_time(wtime)
 # better results.
 ```
 
-There are several other methods to tweak the color engine's settings.
-
 ### Wait engine
 
 To set the wait time you can use:
