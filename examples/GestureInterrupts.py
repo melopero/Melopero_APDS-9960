@@ -28,12 +28,12 @@ def main():
 
     # Interrupt callback
     def on_interrupt():
-        device.clear_gesture_engine_interrupts()
         n = device.get_number_of_datasets_in_fifo()
-        print("There are {n} dataset in the fifo.")
+        print(f"There are {n} dataset in the fifo.")
         for i in range(n):
             print(device.get_gesture_data())
         print()
+        device.clear_gesture_engine_interrupts()
 
 
     device.wake_up()
