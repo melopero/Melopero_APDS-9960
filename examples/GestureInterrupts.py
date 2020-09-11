@@ -11,6 +11,10 @@ from signal import pause
 
 def main():
     device = mp.APDS_9960()
+    ENTERED = 0
+    FIFO_FULL = 1
+    EXITED = 2
+    state = -1
 
     # reset
     device.reset()
@@ -24,15 +28,25 @@ def main():
 
     # Setup interrupt settings
     device.enable_gesture_interrupts()
-    #device.set_gesture_fifo_threshold(mp.APDS_9960.FIFO_INT_AFTER_16_DATASETS)
+    device.set_gesture_fifo_threshold(mp.APDS_9960.FIFO_INT_AFTER_16_DATASETS)
 
     # Interrupt callback
     def on_interrupt():
-        n = device.get_number_of_datasets_in_fifo()
-        print(f"There are {n} dataset in the fifo.")
-        for i in range(n):
-            print(device.get_gesture_data())
-        print()
+        global state
+        global ENTERED
+        global FIFO_FULL
+        global EXITED
+        state = (state + 1) % 3
+        if state == ENTERED:
+            return
+        elif state == FIFO_FULL:
+            n = device.get_number_of_datasets_in_fifo()
+            print(f"There are {n} dataset in the fifo.")
+            for i in range(n):
+                print(device.get_gesture_data())
+            print()
+        elif state == EXITED:
+            return
         device.clear_gesture_engine_interrupts()
 
 
