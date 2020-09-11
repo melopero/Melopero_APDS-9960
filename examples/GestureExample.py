@@ -16,7 +16,7 @@ def main():
 
     device.enable_gestures_engine()
     device.set_gesture_prox_enter_threshold(0)
-    device.device.set_gesture_exit_threshold(0)
+    device.set_gesture_exit_threshold(0)
     device.enter_immediately_gesture_engine()
     device.wake_up()
 
