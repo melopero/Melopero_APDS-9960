@@ -29,8 +29,12 @@ def main():
     # Interrupt callback
     def on_interrupt():
         device.clear_gesture_engine_interrupts()
-        for i in range(16):
+        n = device.get_number_of_datasets_in_fifo()
+        print("There are {n} dataset in the fifo.")
+        for i in range(n):
             print(device.get_gesture_data())
+        print()
+
 
     device.wake_up()
 
