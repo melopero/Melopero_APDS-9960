@@ -182,6 +182,11 @@ class APDS_9960():
     def reset(self):
         self.set_sleep_after_interrupt(False)
         self.enable_all_engines_and_power_up(False)
+        self.enable_proximity_interrupts(False)
+        self.enable_proximity_saturation_interrupts(False)
+        self.enable_als_interrupts(False)
+        self.enable_als_saturation_interrupts(False)
+        self.enable_gesture_interrupts(False)
 
     def enable_all_engines_and_power_up(self, enable=True):
         """Note: calling this function resets also the Proximity and ALS
