@@ -13,7 +13,7 @@ def main():
     device.reset()
 
     device.enable_proximity_engine()
-    device.power_up()
+    device.wake_up()
     print(device.get_status())
     while True:
         time.sleep(.5)

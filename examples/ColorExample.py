@@ -15,7 +15,7 @@ def main():
     device.enable_als_engine()
     device.set_als_integration_time(450)
     saturation = device.get_saturation()
-    device.power_up()
+    device.wake_up()
 
     while True:
         time.sleep(.5)

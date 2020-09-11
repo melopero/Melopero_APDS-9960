@@ -14,10 +14,9 @@ def main():
     # reset
     device.reset()
 
-    device.enable_proximity_engine()
     device.enable_gestures_engine()
     device.enter_immediately_gesture_engine()
-    device.power_up()
+    device.wake_up()
 
     while True:
         # Retrieve the gesture engine status

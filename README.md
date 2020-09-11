@@ -51,8 +51,8 @@ device.enable_wait_engine(enable=True)
 To toggle between the low consumption SLEEP state and the operating IDLE state:  
 
 ```python
-device.power_up(True) # Enter IDLE state
-device.power_up(False) # Enter SLEEP state
+device.wake_up(True) # Enter IDLE state
+device.wake_up(False) # Enter SLEEP state
 ```
 
 Other general methods:  

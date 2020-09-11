@@ -171,12 +171,12 @@ class APDS_9960():
     #     Device Methods
     # =========================================================================
 
-    def power_up(self, power_up=True):
+    def wake_up(self, wake_up=True):
         """Toggles between IDLE and SLEEP state. In sleep state the device can 
         still receive and process I2C messages.\n
         :power_up = True: Enter the IDLE state if True else enter SLEEP state, by default the value is True.
         """
-        self.write_flag_data([power_up], APDS_9960.ENABLE_REG_ADDRESS, 0)
+        self.write_flag_data([wake_up], APDS_9960.ENABLE_REG_ADDRESS, 0)
         time.sleep(0.01)
 
     def reset(self):
