@@ -24,7 +24,7 @@ def main():
 
     # Setup interrupt settings
     device.enable_gesture_interrupts()
-    device.set_gesture_fifo_threshold(mp.APDS_9960.FIFO_INT_AFTER_16_DATASETS)
+    #device.set_gesture_fifo_threshold(mp.APDS_9960.FIFO_INT_AFTER_16_DATASETS)
 
     # Interrupt callback
     def on_interrupt():
