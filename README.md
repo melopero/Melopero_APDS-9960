@@ -115,37 +115,28 @@ device.set_proximity_pulse_count_and_length(pulse_count, pulse_length)
 
 ### Gesture engine
 
-There are multiple conditions and options to enter the gesture engine state. The engine has to be enabled before the gesture state can be entered.
+The sensor enters the gesture engine state only if the proximity measurement is over a certain threshold.
 
-1)  
-    The sensor enters the gesture engine state immediately skipping the proximity engine state:
+```python
+device.set_gesture_prox_enter_threshold(enter_thr) # Sets the enter threshold
 
-    ```python
-    device.enter_immediately_gesture_engine() # Sets the enter condition for the Gesture engine state to: enter immediately
+device.set_gesture_exit_threshold(exit_thr) # Sets the exit threshold
 
-    device.exit_gesture_engine() # Resets the enter condition
+device.set_gesture_exit_persistence(persistence)
+# Sets number of consecutive measurements that have to be below the exit threshold
+# to exit the gesture state.  
 
-    # This methods are NOT meant to be called every measurement... they are called just
-    # once to set the gesture engine state enter and exit condition
-    ```
+device.set_gesture_exit_mask(mask_up, mask_down, mask_left, mask_right)
+# Controls which of the gesture detector photodiodes (UDLR) will be included to
+# determine a “gesture end” and subsequent exit of the gesture state machine
 
-2)
-    The sensor enters the gesture engine state only if the proximity measurement is over a certain threshold. The proximity engine state is not skipped.
+# This methods are NOT meant to be called every measurement... they are called just
+# once to set the gesture engine state enter and exit condition
 
-    ```python
-    device.set_gesture_prox_enter_threshold(enter_thr) # Sets the enter threshold
-
-    device.set_gesture_exit_threshold(exit_thr) # Sets the exit threshold
-    device.set_gesture_exit_persistence(persistence) 
-    # Sets number of consecutive measurements that have to be below the exit threshold
-    # to exit the gesture state.  
-    set_gesture_exit_mask(mask_up, mask_down, mask_left, mask_right)
-    # Controls which of the gesture detector photodiodes (UDLR) will be included to
-    # determine a “gesture end” and subsequent exit of the gesture state machine
-
-    # This methods are NOT meant to be called every measurement... they are called just
-    # once to set the gesture engine state enter and exit condition
-    ```
+# To make sure the gesture engine state is always entered you can set both thresholds to 0
+device.set_gesture_prox_enter_threshold(0)
+device.set_gesture_exit_threshold(0)
+```
 
 The gesture data is made of datasets of four bytes that represent the values of the UDLR photodiodes.
 The gesture data is stored in a FIFO queue and can be retrieved with the following methods:  
