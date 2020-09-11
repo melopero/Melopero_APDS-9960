@@ -32,10 +32,7 @@ def main():
 
     # Interrupt callback
     def on_interrupt():
-        global state
-        global ENTERED
-        global FIFO_FULL
-        global EXITED
+        nonlocal state
         state = (state + 1) % 3
         if state == ENTERED:
             return
