@@ -363,7 +363,7 @@ class APDS_9960():
         self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 1)
 
     def enable_als_interrupts(self, enable=True):
-        self.write_flag_dat([enable], APDS_9960.ENABLE_REG_ADDRESS, 4)
+        self.write_flag_data([enable], APDS_9960.ENABLE_REG_ADDRESS, 4)
 
     def enable_als_saturation_interrupts(self, enable=True):
         self.write_flag_data([enable], APDS_9960.CONFIG_2_REG_ADDRESS, 6)
@@ -585,7 +585,7 @@ class APDS_9960():
                 <= APDS_9960.PULSE_LEN_32_MICROS):
             raise ValueError("pulse_length must be one of PULSE_LEN_N_MICROS.")
 
-        reg_value = (pulse_count - 1) + (pulse_length << 6)
+        reg_value = (pulse_count - 1) | (pulse_length << 6)
         self.write_byte_data(reg_value, APDS_9960.GESTURE_PULSE_COUNT_AND_LEN_REG_ADDRESS)
 
     def set_active_photodiodes_pairs(self, up_down_active=True, right_left_active=True):
