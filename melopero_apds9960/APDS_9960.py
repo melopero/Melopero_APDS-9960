@@ -618,7 +618,7 @@ class APDS_9960():
         flag = [bool(fifo_thr & 0b01), bool(fifo_thr & 0b10)]
         self.write_flag_data(flag, APDS_9960.GESTURE_CONFIG_1_REG_ADDRESS, 6)
 
-    def clear_gesture_engine_interrupts(self):
+    def reset_gesture_engine_interrupt_settings(self):
         """Clears GFIFO, GINT, GVALID, GFIFO_OV and GFIFO_LVL."""
         self.write_flag_data([True], APDS_9960.GESTURE_CONFIG_4_REG_ADDRESS, 2)
 
