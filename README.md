@@ -166,7 +166,7 @@ device.enable_gesture_interrupts()
 device.set_gesture_fifo_threshold(fifo_thr)
 # if the number of datasets in the FIFO exceeds the given threshold an interrupt is generated.
 
-device.clear_gesture_engine_interrupts()
+device.reset_gesture_engine_interrupt_settings()
 ```
 
 #### Advanced settings
@@ -231,6 +231,6 @@ To set the wait time you can use:
 device.set_wait_time(wtime, long_wait=False)
 # This is the time that will pass between two cycles.The wait time should be
 # configured before the proximity and the als engines get enabled.
-# wtime: the time value in millisenconds. Must be between 2.78ms and 712ms
+# wtime: the time value in milliseconds. Must be between 2.78ms and 712ms
 # long_wait = False: If true the wait time is multiplied by 12.
 ```
