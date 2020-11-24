@@ -27,21 +27,17 @@ def main():
     device.set_gesture_fifo_threshold(mp.APDS_9960.FIFO_INT_AFTER_16_DATASETS)
 
     # To clear the interrupt pin we have to read all datasets that are available in the fifo.
-    # Since it takes a little bit of time to read alla these datasets the device may collect 
-    # new ones in the meantime and prevent us from clearing the interrupt ( since the fifo 
-    # would not be empty ). To prevent this behaviour we tell the device to enter the sleep 
+    # Since it takes a little bit of time to read alla these datasets the device may collect
+    # new ones in the meantime and prevent us from clearing the interrupt ( since the fifo
+    # would not be empty ). To prevent this behaviour we tell the device to enter the sleep
     # state after an interrupt occurred. The device will exit the sleep state when the interrupt
     # is cleared.
     device.set_sleep_after_interrupt(True)
 
     # Interrupt callback
     def on_interrupt():
-        n = device.get_number_of_datasets_in_fifo()
-        print(f"There are {n} dataset in the fifo.")
-        for i in range(n):
-            print(device.get_gesture_data())
-        if n < 16:
-            print("Premature exit (before reaching 16 datsets)")
+        detected_gestures = device.parse_gesture_in_fifo()
+        print(detected_gestures)
 
     device.wake_up()
 

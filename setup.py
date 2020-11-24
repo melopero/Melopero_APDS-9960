@@ -7,7 +7,7 @@ import setuptools
 
 setuptools.setup(
     name="melopero_apds9960",
-    version="0.1.2",
+    version="0.1.3",
     description="A module to easily access Melopero's APDS9960 sensor's features",
     url="https://github.com/melopero/Melopero_APDS-9960",
     author="Melopero",

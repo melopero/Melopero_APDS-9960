@@ -6,6 +6,7 @@
 from smbus2 import SMBusWrapper
 import time
 
+
 class APDS_9960():
     DEFAULT_I2C_ADDRESS = 0x39
 
@@ -118,6 +119,13 @@ class APDS_9960():
     GESTURE_WAIT_22_4_MILLIS = 5
     GESTURE_WAIT_30_8_MILLIS = 6
     GESTURE_WAIT_39_2_MILLIS = 7
+
+    # Gestures
+    NO_GESTURE = 'no_gesture'
+    UP_GESTURE = 'up'
+    DOWN_GESTURE = 'down'
+    LEFT_GESTURE = 'left'
+    RIGHT_GESTURE = 'right'
 
     def __init__(self, i2c_address=DEFAULT_I2C_ADDRESS, i2c_bus=1):
         self.i2c_address = i2c_address
@@ -644,6 +652,143 @@ class APDS_9960():
         with the get_number_of_datasets_in_fifo method."""
         return self.read_byte_data(APDS_9960.GESTURE_FIFO_UP_REG_ADDRESS, 4)
 
+    def parse_gesture(self, parse_millis, tolerance=12, der_tolerance=6, confidence=6):
+        """ Returns a list containing the gesture on the vertical and horizontal axis."""
+        # Detecting method:
+        # 1) identify instants where difference between values on same axis is greater than tolerance
+        # 2) identify instants where both curves are raising or falling
+        # 2.1) the curves must be both raising or both falling at the same instants
+        # 3) In those instants which value is greater ?
+        # 3.1) if up[i] > down[i]
+        #          if dup > 0 and ddown > 0 (curves are raising):
+        #              up_count++;
+        #          else if dup < 0 and ddown < 0 (curves are falling):
+        #              down_count++
+        # 4) After having processed all datasets in the fifo see if there is enough "confidence" to tell a gesture has been detected
+        #      if up_count > down_count + confidence:
+        #          gesture = UP_GESTURE
+        #      else if down_count > up_count + confidence:
+        #          gesture = DOWN_GESTURE
+        #      else
+        #          gesture = NO_GESTURE
+        parse_seconds = parse_millis / 1000
+        start_time = time.time()
+        detected_gestures = [APDS_9960.NO_GESTURE, APDS_9960.NO_GESTURE]
+        counts = [0, 0, 0, 0]
+
+        prev_dataset = None
+        first_iteration = True
+
+        while start_time + parse_seconds > time.time():
+            datasets_in_fifo = self.get_number_of_datasets_in_fifo()
+
+            if datasets_in_fifo > 0:
+                if first_iteration:
+                    first_iteration = False
+                    prev_dataset = self.get_gesture_data()
+                else:
+                    for _ in range(datasets_in_fifo):
+                        curr_dataset = self.get_gesture_data()
+
+                        derivatives = [curr_dataset[i] - prev_dataset[i] for i in range(4)]
+                        axis_difference = [curr_dataset[i] - curr_dataset[i + 1] for i in range(0, 4, 2)]
+
+                        for axis in range(2):
+                            up_left_index = axis * 2
+                            down_right_index = axis * 2 + 1
+                            if (abs(axis_difference[axis]) > tolerance) and (
+                                    abs(derivatives[up_left_index]) > der_tolerance or abs(
+                                derivatives[down_right_index]) > der_tolerance):
+                                if derivatives[up_left_index] >= 0 and derivatives[down_right_index] >= 0:
+                                    if curr_dataset[up_left_index] > curr_dataset[down_right_index]:
+                                        counts[up_left_index] += 1
+                                    else:
+                                        counts[down_right_index] += 1
+                                elif derivatives[up_left_index] <= 0 and derivatives[down_right_index] <= 0:
+                                    if curr_dataset[up_left_index] < curr_dataset[down_right_index]:
+                                        counts[up_left_index] += 1
+                                    else:
+                                        counts[down_right_index] += 1
+
+                        prev_dataset = curr_dataset
+
+        if counts[1] >= counts[0] + confidence:
+            detected_gestures[0] = APDS_9960.DOWN_GESTURE
+        elif counts[0] >= counts[1] + confidence:
+            detected_gestures[0] = APDS_9960.UP_GESTURE
+
+        if counts[3] >= counts[2] + confidence:
+            detected_gestures[1] = APDS_9960.RIGHT_GESTURE
+        elif counts[2] >= counts[3] + confidence:
+            detected_gestures[1] = APDS_9960.LEFT_GESTURE
+
+        return detected_gestures
+
+    def parse_gesture_in_fifo(self, tolerance=12, der_tolerance=6, confidence=6):
+        """ Returns a list containing the gesture on the vertical and horizontal axis."""
+        # Detecting method:
+        # 1) identify instants where difference between values on same axis is greater than tolerance
+        # 2) identify instants where both curves are raising or falling
+        # 2.1) the curves must be both raising or both falling at the same instants
+        # 3) In those instants which value is greater ?
+        # 3.1) if up[i] > down[i]
+        #          if dup > 0 and ddown > 0 (curves are raising):
+        #              up_count++;
+        #          else if dup < 0 and ddown < 0 (curves are falling):
+        #              down_count++
+        # 4) After having processed all datasets in the fifo see if there is enough "confidence" to tell a gesture has been detected
+        #      if up_count > down_count + confidence:
+        #          gesture = UP_GESTURE
+        #      else if down_count > up_count + confidence:
+        #          gesture = DOWN_GESTURE
+        #      else
+        #          gesture = NO_GESTURE
+        datasets_in_fifo = self.get_number_of_datasets_in_fifo()
+        detected_gestures = [APDS_9960.NO_GESTURE, APDS_9960.NO_GESTURE]
+
+        if datasets_in_fifo == 0:
+            return detected_gestures
+
+        counts = [0, 0, 0, 0]
+
+        prev_dataset = self.get_gesture_data()
+
+        for _ in range(1, datasets_in_fifo):
+            curr_dataset = self.get_gesture_data()
+
+            derivatives = [curr_dataset[i] - prev_dataset[i] for i in range(4)]
+            axis_difference = [curr_dataset[i] - curr_dataset[i + 1] for i in range(0, 4, 2)]
+
+            for axis in range(2):
+                up_left_index = axis * 2
+                down_right_index = axis * 2 + 1
+                if (abs(axis_difference[axis]) > tolerance) and (abs(derivatives[up_left_index]) > der_tolerance or abs(
+                        derivatives[down_right_index]) > der_tolerance):
+                    if derivatives[up_left_index] >= 0 and derivatives[down_right_index] >= 0:
+                        if curr_dataset[up_left_index] > curr_dataset[down_right_index]:
+                            counts[up_left_index] += 1
+                        else:
+                            counts[down_right_index] += 1
+                    elif derivatives[up_left_index] <= 0 and derivatives[down_right_index] <= 0:
+                        if curr_dataset[up_left_index] < curr_dataset[down_right_index]:
+                            counts[up_left_index] += 1
+                        else:
+                            counts[down_right_index] += 1
+
+            prev_dataset = curr_dataset
+
+        if counts[1] >= counts[0] + confidence:
+            detected_gestures[0] = APDS_9960.DOWN_GESTURE
+        elif counts[0] >= counts[1] + confidence:
+            detected_gestures[0] = APDS_9960.UP_GESTURE
+
+        if counts[3] >= counts[2] + confidence:
+            detected_gestures[1] = APDS_9960.RIGHT_GESTURE
+        elif counts[2] >= counts[3] + confidence:
+            detected_gestures[1] = APDS_9960.LEFT_GESTURE
+
+        return detected_gestures
+
     # =========================================================================
     #     Wait Engine Methods
     # =========================================================================
@@ -666,4 +811,3 @@ class APDS_9960():
         # wtime
         reg_value = 256 - int(wtime / 2.78)
         self.write_byte_data(reg_value, APDS_9960.WAIT_TIME_REG_ADDRESS)
-
