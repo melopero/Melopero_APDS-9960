@@ -47,7 +47,7 @@ def main():
 
     # Setup interrupt callback
     int_listener_pin = "GPIO4"
-    interrupt = gpio.Button(int_listener_pin, pull_up=True, active_state=False)
+    interrupt = gpio.Button(int_listener_pin, pull_up=True)
     interrupt.when_pressed = on_interrupt
 
     pause()
