@@ -149,6 +149,31 @@ for i in range(n):
     print(dataset)
 ```
 
+To detect/parse gestures there are two useful methods:
+
+```python
+# Collect gesture data and try to detect a gesture for the given amount of time
+device.parse_gesture(parse_millis, tolerance = 12, der_tolerance = 6, confidence = 6)
+# Try to detect a gesture from the datasets present in the fifo
+device.parse_gesture_in_fifo(tolerance = 12, der_tolerance = 6, confidence = 6)
+
+# The detected gestures are returned as a list of two elements:
+# the first element describes the detected gesture on the vertical axis (up_gesture/down_gesture/no_gesture)
+# the second element describes the detected gesture on the horizontal axis (left_gesture/right_gesture/no_gesture)
+
+
+# Advanced settings:
+# The tolerance parameter determines how much the two values (on the same axis) have to differ to interpret
+# the current dataset as valid for gesture detection (if the values are nearly the same then its not possible to decide the direction 
+# in which the object is moving).
+#
+# The der_tolerance does the same for the derivative of the two curves (the values on one axis through time):
+# this prevents the device from detecting a gesture if the objects surface is not even...
+#
+# The confidence tells us the minimum amount of "detected gesture samples" needed for an axis to tell that a gesture has been detected othat axis:
+# How its used in the source code: if (detected_up_gesture_samples > detected_down_gesture_samples + confidence) gesture_up_down = GESTURE_UP
+```
+
 Other general methods:
 
 ```python
