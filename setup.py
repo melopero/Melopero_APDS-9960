@@ -7,7 +7,7 @@ import setuptools
 
 setuptools.setup(
     name="melopero_apds9960",
-    version="0.1.3",
+    version="0.1.4",
     description="A module to easily access Melopero's APDS9960 sensor's features",
     url="https://github.com/melopero/Melopero_APDS-9960",
     author="Melopero",
@@ -20,5 +20,5 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
     ],
-    install_requires=["smbus2"],
+    install_requires=["smbus2>=0.4"],
 )

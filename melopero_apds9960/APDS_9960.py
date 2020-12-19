@@ -3,7 +3,7 @@
 """
 @author: Leonardo La Rocca
 """
-from smbus2 import SMBusWrapper
+from smbus2 import SMBus
 import time
 
 
@@ -141,7 +141,7 @@ class APDS_9960():
         :amount = 1: the amount of bytes to read, by default it is 1.\n
         Return value: an int if the amount is 1, a list of ints if the amount is greater than 1.\n
         """
-        with SMBusWrapper(self.i2c_bus) as bus:
+        with SMBus(self.i2c_bus) as bus:
             data = bus.read_i2c_block_data(self.i2c_address, register_address, amount)
         if amount == 1:
             return data[0]
@@ -155,7 +155,7 @@ class APDS_9960():
         """
         if type(value) != list:
             value = [value]
-        with SMBusWrapper(self.i2c_bus) as bus:
+        with SMBus(self.i2c_bus) as bus:
             bus.write_i2c_block_data(self.i2c_address, register_address, value)
 
     def write_flag_data(self, flag, register_address, offset):
@@ -262,7 +262,7 @@ class APDS_9960():
     def clear_proximity_interrupts(self):
         # Interrupts are cleared by “address accessing” the appropriate register. This is special I2C transaction
         # consisting of only two bytes: chip address with R/W = 0, followed by a register address.
-        with SMBusWrapper(self.i2c_bus) as bus:
+        with SMBus(self.i2c_bus) as bus:
             bus.write_byte(self.i2c_address, APDS_9960.PROXIMITY_INT_CLEAR_REG_ADDRESS)
 
     def set_proximity_gain(self, prox_gain):
@@ -379,7 +379,7 @@ class APDS_9960():
     def clear_als_interrupts(self):
         # Interrupts are cleared by “address accessing” the appropriate register. This is special I2C transaction
         # consisting of only two bytes: chip address with R/W = 0, followed by a register address.
-        with SMBusWrapper(self.i2c_bus) as bus:
+        with SMBus(self.i2c_bus) as bus:
             bus.write_byte(self.i2c_address, APDS_9960.ALS_INT_CLEAR_REG_ADDRESS)
 
     def set_als_gain(self, als_gain):
